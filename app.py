@@ -8,11 +8,10 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
-@app.route('/', methods=["GET", "HEAD"])
+@app.route('/')
 def index():
-    if request.method == "HEAD":
-        return "", 200
     return render_template("index.html")
+
 
 @app.route('/ask', methods=['POST'])
 def ask():
