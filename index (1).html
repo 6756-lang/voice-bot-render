@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ChatGPT Voice Bot</title>
+  <script src="https://cdn.webrtc-experiment.com/RecordRTC.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 50px; }
+    button { padding: 12px 24px; font-size: 16px; margin-top: 20px; }
+    #result { margin-top: 30px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <h1>🎤 ChatGPT Voice Bot</h1>
+  <button onclick="startRecording()">Click to Ask a Question</button>
+  <div id="result">
+    <p id="question"></p>
+    <p id="response"></p>
+    <audio id="audio" controls style="margin-top: 20px;"></audio>
+    <br>
+    <a id="downloadLink" href="#" download="chatgpt-response.mp3" style="display:none;">⬇️ Download Voice Response</a>
+  </div>
+
+  <script>
+    let recorder;
+    let stream;
+
+    async function startRecording() {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recorder = RecordRTC(stream, {
+        type: 'audio',
+        mimeType: 'audio/wav',
+        desiredSampRate: 16000
+      });
+
+      recorder.startRecording();
+
+      setTimeout(() => {
+        recorder.stopRecording(() => {
+          const blob = recorder.getBlob();
+          stream.getTracks().forEach(track => track.stop());
+
+          const formData = new FormData();
+          formData.append("audio", blob, "recording.wav");
+
+          fetch("/ask", {
+            method: "POST",
+            body: formData
+          })
+          .then(res => res.json())
+          .then(data => {
+            document.getElementById("question").innerText = "You asked: " + data.user_text;
+            document.getElementById("response").innerText = "ChatGPT said: " + data.bot_reply;
+            const audio = document.getElementById("audio");
+            audio.src = data.audio_url;
+            audio.play();
+
+            const downloadLink = document.getElementById("downloadLink");
+            downloadLink.href = data.audio_url;
+            downloadLink.style.display = "inline";
+          });
+        });
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
